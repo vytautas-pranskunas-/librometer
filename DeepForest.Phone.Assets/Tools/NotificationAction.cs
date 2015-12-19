@@ -31,11 +31,13 @@ namespace DeepForest.Phone.Assets.Tools
         {
             private readonly Action _execute;
             private readonly Func<bool> _canExecute;
+            private readonly bool _closeBeforeExecute;
 
-            public NotificationCommand(Action execute, Func<bool> canExecute)
+            public NotificationCommand(Action execute, Func<bool> canExecute, bool closeBeforeExecute)
             {
                 _execute = execute;
                 _canExecute = canExecute;
+                _closeBeforeExecute = closeBeforeExecute;
             }
 
             bool ICommand.CanExecute(object parameter)
@@ -51,7 +53,13 @@ namespace DeepForest.Phone.Assets.Tools
 
             void ICommand.Execute(object parameter)
             {
-                _execute();
+                if (_closeBeforeExecute)
+                    NotificationTool.Close();
+
+                _execute?.Invoke();
+
+                if (_closeBeforeExecute)
+                    return;
 
                 NotificationTool.Close();
             }
@@ -66,8 +74,18 @@ namespace DeepForest.Phone.Assets.Tools
         {
         }
 
+        public NotificationAction(object content, Action execute, bool closeBeforeExecute)
+            : this(content, (object)null, execute, (Func<bool>)(() => true), closeBeforeExecute)
+        {
+        }
+
         public NotificationAction(object content, Action execute, Func<bool> canExecute)
             : this(content, null, execute, canExecute)
+        {
+        }
+
+        public NotificationAction(object content, Action execute, Func<bool> canExecute, bool closeBeforeExecute = false)
+            : this(content, (object)null, execute, canExecute, closeBeforeExecute)
         {
         }
 
@@ -76,11 +94,11 @@ namespace DeepForest.Phone.Assets.Tools
         {
         }
 
-        public NotificationAction(object content, object contentTemplateKey, Action execute, Func<bool> canExecute)
+        public NotificationAction(object content, object contentTemplateKey, Action execute, Func<bool> canExecute, bool closeBeforeExecute = false)
         {
             Content = content;
             ContentTemplateKey = contentTemplateKey;
-            Command = new NotificationCommand(execute, canExecute);
+            Command = new NotificationCommand(execute, canExecute, closeBeforeExecute);
         }
 
         #endregion
